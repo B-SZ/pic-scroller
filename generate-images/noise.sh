@@ -1,7 +1,7 @@
 #!/bin/bash
 
 main() {
-    OUT="out"
+    OUT="../pictures/"
     mkdir -p "$OUT"
     local COUNT="500"
     local TMP="$OUT/tmp.jpg"
