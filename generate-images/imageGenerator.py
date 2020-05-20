@@ -4,63 +4,44 @@ import numpy as np
 from PIL import Image, ImageFont, ImageDraw
 from PIL import ImageFilter
 from itertools import count
-from string import ascii_lowercase,digits,printable
-from glob import glob
+from string import printable
 def imageSsizesGen(rnd):
   a = 500*[(800,600)]+500*[(1024,768)]
   rnd.shuffle(a)
   return tuple(a)
 
-def textGen(rnd,size,font):
-     rndStr = ''.join(rnd.choice(tuple(ascii_lowercase+digits),size=8))
-     img = Image.new("RGB", size, (0,0,0))
-     draw = ImageDraw.Draw(img)
-     for i in range(8):
-       position = (rnd.integers(0,size[0]),rnd.integers(0,size[1])) 
-       color = tuple(rnd.integers(128,255) for i in '...')
-       draw.text(position, rndStr , color, font=font)
-     sign = {True : 1, False : -1}[rnd.integers(2) == 0]
-     for r in sign*rnd.random(8):
-       img = img.rotate(r)
-
-     font = ImageFont.truetype('/usr/share/fonts/truetype/ubuntu/Ubuntu-B.ttf',80)  
-     draw = ImageDraw.Draw(img)
-     draw.text((10,10), rndStr , (255,255,255), font=font)   
-
-     return img
-
-patternsFontPath = glob('/usr/share/fonts/truetype/lyx/*.ttf')
-def LayerPattern(rnd,size,patternsFontPath = patternsFontPath):
-     img = Image.new("RGB", size, (0,0,0))
-     draw = ImageDraw.Draw(img)
-     for i in range(40):
-       position = (rnd.integers(0,size[0]),rnd.integers(0,size[1])) 
-       font = ImageFont.truetype(rnd.choice(patternsFontPath),rnd.integers(40,80))  
-       color = tuple(rnd.integers(128,255) for i in '...')
+patternsFontPath = ('/usr/share/fonts/truetype/lyx/cmex10.ttf',
+ '/usr/share/fonts/truetype/lyx/rsfs10.ttf',
+ '/usr/share/fonts/truetype/lyx/eufm10.ttf',
+ '/usr/share/fonts/truetype/lyx/cmr10.ttf',
+ '/usr/share/fonts/truetype/lyx/stmary10.ttf',
+ '/usr/share/fonts/truetype/lyx/cmmi10.ttf',
+ '/usr/share/fonts/truetype/lyx/msbm10.ttf',
+ '/usr/share/fonts/truetype/lyx/msam10.ttf',
+ '/usr/share/fonts/truetype/lyx/wasy10.ttf',
+ '/usr/share/fonts/truetype/lyx/cmsy10.ttf',
+ '/usr/share/fonts/truetype/lyx/esint10.ttf')
+def imagePattern(img,rnd,patternsFontPath = patternsFontPath):
+     draw,size = ImageDraw.Draw(img),img.size
+     for fontSize in rnd.integers(5*[150,220]+10*[100,110]+10*[30,80]):
+       position = (rnd.integers(0,size[0]),rnd.integers(0,size[1]))
+       font = ImageFont.truetype(rnd.choice(patternsFontPath),fontSize)
+       color = tuple(rnd.integers(115,250) for i in '...')
        draw.text(position, rnd.choice(tuple(printable)) , color, font=font)
-     sign = {True : 1, False : -1}[rnd.integers(2) == 0]
-     for r in sign*2*rnd.random(8):
-       img = img.rotate(r)
-     return img
-
 def main():
   rnd = Generator(MT19937(0))
-  #fontsFilenames = glob('/usr/share/fonts/truetype/lyx/*.ttf')#glob("/usr/share/fonts/truetype/**/*.ttf",recursive=True)
+  font = ImageFont.truetype('/usr/share/fonts/truetype/ubuntu/Ubuntu-B.ttf',40)
   for index,size in  zip(count(),imageSsizesGen(rnd)):
-     #fontname = rnd.choice(fontsFilenames)
-     #font = ImageFont.truetype(fontname,rnd.integers(25,40))
      filename = '{:0>3}.jpg'.format(index)
-     print(filename,size)
-     img = LayerPattern(rnd,size)#textGen(rnd,size,font)
-     a = np.array((np.array(img)>0),dtype=np.uint8)
-     b = np.array(Image.new("RGB", size, tuple(rnd.integers(128) for i in '...')))
-     b[rnd.choice(size[1],size=50)] = tuple(rnd.integers(128) for i in '...')
-     c = (1-a)*b+np.array(img)
-     c[rnd.choice(size[1],size=50)] = tuple(rnd.integers(128) for i in '...')
-     img = Image.fromarray(c, 'RGB')
-     font = ImageFont.truetype('/usr/share/fonts/truetype/ubuntu/Ubuntu-B.ttf',40)  
+     text = filename + ' {}x{}'.format(size[0],size[1])
+     print(text)
+     backgroundColor = tuple(rnd.integers(128) for i in '...')
+     img = Image.new("RGB", size, backgroundColor)
+     imagePattern(img,rnd)
      draw = ImageDraw.Draw(img)
-     draw.text((10,10),(5*' ')+filename + ' {}*{}'.format(size[0],size[1]), (255,255,255), font=font)  
-     img.save(filename,quality=100)
+     textSize=font.getsize(text)
+     draw.rectangle([30,30] + [textSize[0]+30] + [textSize[1]+30], fill=backgroundColor)
+     draw.text((30,30),text, tuple(128+np.array(backgroundColor,dtype=np.uint8)), font=font)
+     img.save("../pictures/"+filename,quality=100)
 if __name__=='__main__':
   main()
